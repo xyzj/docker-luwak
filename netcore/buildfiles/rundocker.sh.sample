@@ -1,0 +1,35 @@
+#!/bin/bash
+
+BASEDIR=$(dirname $(readlink -f "$0"))
+echo "--------------------------------------------------"
+echo "Run in BASEDIR: $BASEDIR as $(basename $BASEDIR)"
+echo "--------------------------------------------------"
+
+if [ ! -d $BASEDIR ]; then
+	sudo mkdir -p $BASEDIR
+	sudo chmod ugo+rwx $BASEDIR
+fi
+
+mkdir -p $BASEDIR/tmp
+mkdir -p $BASEDIR/asset-imgs
+mkdir -p $BASEDIR/www
+
+docker rm -f $(basename $BASEDIR)
+
+if [ `whoami` != "root" ];then
+    sed -i "s/99999/$(id -u)/g" $BASEDIR/luwak_linux/programs/run.sh
+fi
+
+# --user 0:0
+docker run -it --restart=unless-stopped --user 0:0 \
+	--name $(basename $BASEDIR) \
+	-eTZ="Asia/Shanghai" \
+	-p33810-33829:33810-33829 \
+	-v$BASEDIR/tmp:/tmp/ttt \
+	-v$BASEDIR/luwak_linux/programs:/opt/bin \
+	-v$BASEDIR/asset-imgs:/opt/asset-imgs \
+	-v$BASEDIR/www:/opt/www \
+	xyzj/luwak-netcore:latest \
+	/opt/bin/run.sh \
+&& \
+echo "The container will be ready soon"
